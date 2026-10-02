@@ -27,3 +27,23 @@ where = ["src"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+ignore = [
+    "UP009",   # 保留 coding 声明（团队习惯）
+    "SIM105",  # contextlib.suppress 可读性见仁见智
+    "RUF001",  # 中文全角标点在字符串里是刻意的
+    "RUF002", "RUF003",
+]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+check_untyped_defs = true
+warn_unused_ignores = false
+exclude = ["build/", "dist/"]

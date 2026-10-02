@@ -7,8 +7,8 @@
 """
 from __future__ import annotations
 
-from .exceptions import ConfigError
 from .engines.base import BaseEngine
+from .exceptions import ConfigError
 
 
 class EngineMatrix:
@@ -36,6 +36,6 @@ class EngineMatrix:
         for e in self._engines:
             try:
                 await e.aclose()
-            except Exception as ex:  # noqa: BLE001 关闭阶段尽力而为
+            except Exception as ex:
                 errors.append(ex)
         return errors

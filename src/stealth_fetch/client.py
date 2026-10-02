@@ -13,11 +13,22 @@ import time
 from urllib.parse import urlsplit
 
 from .config import BrowserProfile, ClientConfig
-from .exceptions import (BudgetExceededError, ConfigError, EngineClosedError,
-                         RateLimitedError, TransportError)
+from .exceptions import (
+    BudgetExceededError,
+    ConfigError,
+    EngineClosedError,
+    RateLimitedError,
+    TransportError,
+)
 from .matrix import EngineMatrix
-from .models import (AttemptRecord, Classification, LogicalCookieJar, Request, Response,
-                     SuccessPredicate, ChallengePredicate)
+from .models import (
+    AttemptRecord,
+    ChallengePredicate,
+    LogicalCookieJar,
+    Request,
+    Response,
+    SuccessPredicate,
+)
 from .policy import RetryPolicy, classify_response, decide
 
 
@@ -61,9 +72,10 @@ class AsyncClient:
         if self._closed:
             raise EngineClosedError("AsyncClient 已关闭")
         # 优先级合并：请求 > 客户端配置 > 默认
+        merged_headers: dict = {**(self.config.headers or {}), **(headers or {})}
         req = Request(
             method=method, url=url, params=params,
-            headers={**(self.config.headers or {}), **(headers or {})},
+            headers=merged_headers,
             data=data, json=json,
             timeout=timeout if timeout is not None else self.config.timeout,
             proxy=proxy if proxy is not None else self.config.proxy,
@@ -72,8 +84,8 @@ class AsyncClient:
             allow_non_idempotent_retry=allow_non_idempotent_retry,
         )
         # UA 由 profile 派生（未被调用方显式覆盖时）
-        if not any(k.lower() == "user-agent" for k in req.headers):
-            req.headers["User-Agent"] = self.profile.user_agent
+        if not any(k.lower() == "user-agent" for k in merged_headers):
+            merged_headers["User-Agent"] = self.profile.user_agent
 
         return await self._dispatch(req, success_predicate, challenge_predicate)
 
@@ -192,9 +204,9 @@ class AsyncClient:
         errors = await self.matrix.aclose_all()
         if errors:
             import warnings
-            warnings.warn(f"aclose 有 {len(errors)} 个引擎关闭失败: {errors!r}", ResourceWarning)
+            warnings.warn(f"aclose 有 {len(errors)} 个引擎关闭失败: {errors!r}", ResourceWarning, stacklevel=2)
 
-    async def __aenter__(self) -> "AsyncClient":
+    async def __aenter__(self) -> AsyncClient:
         return self
 
     async def __aexit__(self, *exc):

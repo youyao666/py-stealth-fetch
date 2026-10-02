@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """指纹诊断测试：真实 schema fixture、四态对比、无 eval、解析错误。"""
 import json
-import sys
 from pathlib import Path
 
 import pytest

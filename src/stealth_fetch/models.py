@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
-
+from typing import Any
 
 # ---------- Headers：大小写不敏感取值 + 保留重复项（审计 P1） ----------
 
@@ -164,7 +164,7 @@ class Request:
 
     @property
     def replayable(self) -> bool:
-        return self.method in ("GET", "HEAD") or self.data is None and self.json is None
+        return self.method in ("GET", "HEAD") or (self.data is None and self.json is None)
 
     @property
     def may_auto_retry(self) -> bool:

@@ -37,7 +37,7 @@ class BrowserProfile:
     controllable_fields: tuple = ("engine_profile", "user_agent")
 
     @classmethod
-    def chrome(cls, version: str = "124") -> "BrowserProfile":
+    def chrome(cls, version: str = "124") -> BrowserProfile:
         ua = (f"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
               f"(KHTML, like Gecko) Chrome/{version}.0.0.0 Safari/537.36")
         return cls(family="chrome", version=version, user_agent=ua,

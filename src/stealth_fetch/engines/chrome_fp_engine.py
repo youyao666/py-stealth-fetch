@@ -59,7 +59,7 @@ class ChromeFpEngine(BaseEngine):
         return self._session
 
     def _sync_request(self, request: Request, cookies: dict | None,
-                      effective_timeout: float) -> tuple:
+                      effective_timeout: float | None) -> tuple:
         """在线程中执行的纯同步路径（持锁串行）。"""
         session = self._ensure_session()
         with self._lock:

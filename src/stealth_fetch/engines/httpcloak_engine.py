@@ -58,7 +58,7 @@ class HttpCloakEngine(BaseEngine):
         started = time.monotonic()
         timeout_s = effective_timeout if effective_timeout is not None else (request.timeout or 30.0)
         timeout_cap = min(timeout_s, 60.0)
-        kwargs = dict(
+        kwargs: dict = dict(
             params=request.params,
             headers=request.headers or None,
             cookies=cookies or None,
@@ -83,7 +83,7 @@ class HttpCloakEngine(BaseEngine):
             # （真异步接口，超时取消有效；契约测试覆盖）
             r = await asyncio.wait_for(async_method(request.url, **kwargs),
                                        timeout=timeout_cap)
-        except asyncio.TimeoutError as e:
+        except TimeoutError as e:
             raise TransportError(f"httpcloak 超时(>{timeout_cap}s)", reason="timeout") from e
         except EngineClosedError:
             raise

@@ -14,9 +14,9 @@ from __future__ import annotations
 
 import asyncio
 import time
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from email.utils import parsedate_to_datetime
-from typing import Awaitable, Callable
 
 from .models import Classification, Response
 
@@ -48,8 +48,8 @@ class RetryPolicy:
     max_rate_limit_waits: int = 1         # 429 在预算内的最多额外等待次数
 
     # 可注入（确定性测试）
-    sleeper: Sleeper = staticmethod(lambda s: asyncio.sleep(s))
-    clock: Clock = staticmethod(time.monotonic)
+    sleeper: Sleeper = staticmethod(lambda s: asyncio.sleep(s))  # noqa: RUF009 可注入
+    clock: Clock = staticmethod(time.monotonic)  # noqa: RUF009 可注入
 
     def backoff(self, attempt_index: int) -> float:
         return min(self.backoff_base_s * (2 ** max(0, attempt_index - 1)), self.backoff_max_s)

@@ -9,8 +9,13 @@ import http.server
 import json
 import threading
 
-from stealth_fetch import (AsyncClient, BrowserSessionSnapshot, RetryPolicy,
-                           SessionMigrator, SnapshotCookie)
+from stealth_fetch import (
+    AsyncClient,
+    BrowserSessionSnapshot,
+    RetryPolicy,
+    SessionMigrator,
+    SnapshotCookie,
+)
 from stealth_fetch.engines.curl_cffi_engine import CurlCffiEngine
 
 

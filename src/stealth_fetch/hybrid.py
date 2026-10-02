@@ -17,12 +17,11 @@ from __future__ import annotations
 import json
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from urllib.parse import urlsplit
 
 from .client import AsyncClient
 from .models import Classification, CookieRecord
-
 
 # ---------- 快照 ----------
 
@@ -49,7 +48,7 @@ class BrowserSessionSnapshot:
     browser_version: str = ""
     client_hints: dict | None = None
     proxy_descriptor: str | None = None   # 出口身份描述（如 " residential-jp-01"），非凭据
-    collected_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    collected_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     source: str = "external-browser"      # 快照生产者（浏览器自动化不在本包范围）
 
     def to_json(self) -> str:
@@ -61,7 +60,7 @@ class BrowserSessionSnapshot:
         }, ensure_ascii=False, indent=1)
 
     @classmethod
-    def from_json(cls, raw: str) -> "BrowserSessionSnapshot":
+    def from_json(cls, raw: str) -> BrowserSessionSnapshot:
         d = json.loads(raw)
         cookies = tuple(SnapshotCookie(**c) for c in d.get("cookies", ()))
         return cls(cookies=cookies, user_agent=d["user_agent"],
@@ -111,13 +110,15 @@ class SessionMigrator:
 
         # --- 预检 1：过期 Cookie（按名剔除并记录） ---
         now = time.time()
-        alive, expired = [], []
+        alive: list[SnapshotCookie] = []
+        expired: list[SnapshotCookie] = []
         for c in snapshot.cookies:
             (expired if c.expires is not None and c.expires <= now else alive).append(c)
         result.skipped_expired = [c.name for c in expired]
 
         # --- 预检 2：目标作用域（域不匹配的不会被发送，如实记录） ---
-        in_scope, out_scope = [], []
+        in_scope: list[SnapshotCookie] = []
+        out_scope: list[SnapshotCookie] = []
         for c in alive:
             d = c.domain.lstrip(".").lower()
             (in_scope if host == d or host.endswith("." + d) else out_scope).append(c)
@@ -131,7 +132,8 @@ class SessionMigrator:
                 "快照 UA 与客户端 profile UA 不一致（引擎指纹与浏览器会话可能不匹配，风控可识别）")
         if snapshot.proxy_descriptor and self.client.config.proxy is None:
             result.limitations.append(
-                f"快照采集自代理出口 {snapshot.proxy_descriptor!r}，当前客户端直连——出口 IP 不同，绑定出口的会话态可能失效")
+                f"快照采集自代理出口 {snapshot.proxy_descriptor!r}，当前客户端直连——"
+                "出口 IP 不同，绑定出口的会话态可能失效")
         # 分区 Cookie：目标引擎（HTTP 客户端）无分区概念 → 报告限制
         partitioned = [c.name for c in in_scope if c.partition_key]
         if partitioned:

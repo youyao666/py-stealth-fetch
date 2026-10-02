@@ -78,7 +78,7 @@ def compare_fingerprints(observed: dict, baseline: dict, *,
                          environment: dict | None = None) -> FingerprintReport:
     spec = fields or TLS_PEET_FIELDS
     comps: list[FieldComparison] = []
-    for key, label in spec.items():
+    for key, _label in spec.items():
         ov, os_ = _value(observed, key)
         bv, bs = _value(baseline, key)
         if os_ != "ok" or bs != "ok":

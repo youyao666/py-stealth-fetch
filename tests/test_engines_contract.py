@@ -5,8 +5,13 @@
 """
 import pytest
 
-from stealth_fetch import (AsyncClient, EngineClosedError, NotSupportedError,
-                           RetryPolicy, TransportError)
+from stealth_fetch import (
+    AsyncClient,
+    EngineClosedError,
+    NotSupportedError,
+    RetryPolicy,
+    TransportError,
+)
 from stealth_fetch.engines.chrome_fp_engine import ChromeFpEngine
 from stealth_fetch.engines.curl_cffi_engine import CurlCffiEngine
 from stealth_fetch.engines.httpcloak_engine import HttpCloakEngine

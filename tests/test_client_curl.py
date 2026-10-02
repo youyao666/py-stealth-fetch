@@ -4,8 +4,14 @@ import json
 
 import pytest
 
-from stealth_fetch import (AsyncClient, BrowserProfile, ConfigError, EngineClosedError,
-                           NotSupportedError, RetryPolicy)
+from stealth_fetch import (
+    AsyncClient,
+    BrowserProfile,
+    ConfigError,
+    EngineClosedError,
+    NotSupportedError,
+    RetryPolicy,
+)
 from stealth_fetch.engines.curl_cffi_engine import CurlCffiEngine
 
 

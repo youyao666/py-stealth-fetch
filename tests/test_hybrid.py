@@ -2,10 +2,13 @@
 """会话迁移测试：全部走本地 HTTP 服务与真实客户端，mock/离线。"""
 import time
 
-import pytest
-
-from stealth_fetch import (AsyncClient, BrowserSessionSnapshot, RetryPolicy,
-                           SessionMigrator, SnapshotCookie)
+from stealth_fetch import (
+    AsyncClient,
+    BrowserSessionSnapshot,
+    RetryPolicy,
+    SessionMigrator,
+    SnapshotCookie,
+)
 from stealth_fetch.engines.curl_cffi_engine import CurlCffiEngine
 
 

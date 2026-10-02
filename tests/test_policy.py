@@ -4,8 +4,15 @@ import asyncio
 
 import pytest
 
-from stealth_fetch import (AsyncClient, BudgetExceededError, Classification, EngineClosedError,
-                           Headers, RateLimitedError, Response, RetryPolicy, TransportError)
+from stealth_fetch import (
+    AsyncClient,
+    BudgetExceededError,
+    Headers,
+    RateLimitedError,
+    Response,
+    RetryPolicy,
+    TransportError,
+)
 from stealth_fetch.engines.base import BaseEngine, EngineCapabilities
 
 
@@ -181,7 +188,7 @@ async def test_budget_exhaustion_raises_with_history():
                          clock=lambda: clock["t"],
                          sleeper=lambda s: clock.__setitem__("t", clock["t"] + s + 10) or asyncio.sleep(0))
     async with _client([a], policy) as client:
-        with pytest.raises((BudgetExceededError, TransportError)) as ei:
+        with pytest.raises((BudgetExceededError, TransportError)):
             await client.get("http://t/x")
     # 第一次传输失败后退避使时钟前进 10s+，预算耗尽
     assert a.calls <= 2

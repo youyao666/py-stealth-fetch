@@ -29,10 +29,11 @@ class CurlCffiEngine(BaseEngine):
     # ---- 懒导入（核心包导入零第三方） ----
     def _import(self):
         try:
+            import typing
+
             import curl_cffi
             from curl_cffi.requests import AsyncSession
             from curl_cffi.requests.impersonate import BrowserTypeLiteral
-            import typing
             return curl_cffi, AsyncSession, typing.get_args(BrowserTypeLiteral)
         except ImportError as e:
             from ..exceptions import NotSupportedError
@@ -101,7 +102,7 @@ class CurlCffiEngine(BaseEngine):
             status_code=r.status_code,
             url=str(r.url),
             headers=Headers(raw_headers),
-            content=r.content if isinstance(r.content, (bytes, bytearray)) else str(r.content).encode(),
+            content=bytes(r.content) if isinstance(r.content, (bytes, bytearray)) else str(r.content).encode(),
             request_method=request.method,
             encoding=encoding,
             engine=self.name,

@@ -56,13 +56,13 @@ class WreqEngine(BaseEngine):
         return self._client
 
     async def _single(self, request: Request, cookies: dict | None,
-                      timeout_s: float, url: str) -> tuple:
+                      timeout_s: float, url: str):  # pyo3 对象，返回类型对 mypy 不透明
         client = self._ensure_client()
         headers = dict(request.headers or {})
         if cookies:
             # 实测 wreq 0.12.3 绑定层多键 cookies dict 只发送第一个 → 改拼标准 Cookie 头
             headers["Cookie"] = "; ".join(f"{k}={v}" for k, v in cookies.items())
-        kwargs = dict(
+        kwargs: dict = dict(
             query=request.params,                    # 实测：params 会被静默忽略，正确 kwarg 是 query
             headers=headers or None,
             timeout=timedelta(seconds=timeout_s),   # 实测要求 timedelta
