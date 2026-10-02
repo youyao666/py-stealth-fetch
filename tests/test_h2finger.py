@@ -70,3 +70,54 @@ def test_browser_profile_carries_three_layer_declaration():
     assert p.h2_finger is not None and p.h2_finger.to_akamai() == REAL_AKAMAI
     s = p.summary()
     assert s["declared_layers"] == {"tls": False, "h2": True}   # ja3/ja4 未声明 → False
+
+
+# ---------- JA3 稳健对比（2026-10-02/03 两天完整实测串：集合一致，仅顺序洗牌） ----------
+
+YESTERDAY_JA3 = ("771,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,"
+                 "17613-45-10-11-23-51-16-0-65281-13-5-43-35-27-65037-18,4588-29-23-24,0")
+TODAY_JA3 = ("771,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,"
+             "65037-16-11-45-65281-18-10-43-5-51-17613-35-0-13-23-27,4588-29-23-24,0")
+
+
+def test_grease_ids_and_real_extensions():
+    from stealth_fetch.fingerprint import GREASE_IDS
+    assert 0x0A0A in GREASE_IDS and 0xFAFA in GREASE_IDS and len(GREASE_IDS) == 16
+    # 实测纠偏：两天漂移的 17613/65037 不是 GREASE，是真实扩展（ALPS 旧版 / ECH）
+    assert 17613 not in GREASE_IDS and 65037 not in GREASE_IDS
+
+
+def test_real_two_day_ja3_is_match_after_normalization():
+    """真实两日完整串：集合一致仅顺序洗牌 → 归一化+顺序不敏感后必须 match。"""
+    from stealth_fetch.fingerprint import compare_fingerprints
+    r = compare_fingerprints({"ja3": TODAY_JA3}, {"ja3": YESTERDAY_JA3})
+    f = next(x for x in r.fields if x.field == "ja3")
+    assert f.status == "match", f.note
+    assert "顺序不敏感" in f.note
+
+
+def test_synthetic_set_difference_reports_evidence():
+    """合成的真实集合差异：如实 mismatch 并把差异 ID 列进证据。"""
+    from stealth_fetch.fingerprint import compare_fingerprints
+    changed = TODAY_JA3.replace("-17613", "").replace("65037-", "", 1)  # 去掉两个真实扩展（65037 在段首）
+    r = compare_fingerprints({"ja3": changed}, {"ja3": TODAY_JA3})
+    f = next(x for x in r.fields if x.field == "ja3")
+    assert f.status == "mismatch"
+    assert "17613" in f.note and "65037" in f.note
+
+
+def test_ja3_order_shuffle_alone_is_match():
+    """仅扩展顺序洗牌（集合一致）不误报。"""
+    from stealth_fetch.fingerprint import compare_fingerprints
+    shuffled = ",".join([TODAY_JA3.split(",")[0], TODAY_JA3.split(",")[1],
+                         "-".join(reversed(TODAY_JA3.split(",")[2].split("-")))])
+    r = compare_fingerprints({"ja3": shuffled}, {"ja3": TODAY_JA3})
+    assert next(x for x in r.fields if x.field == "ja3").status == "match"
+
+
+def test_real_cipher_change_still_mismatched():
+    """真实差异（密码套件变了）仍要报 mismatch。"""
+    from stealth_fetch.fingerprint import compare_fingerprints
+    changed = TODAY_JA3.replace("4865-4866-4867", "4865-4866")
+    r = compare_fingerprints({"ja3": changed}, {"ja3": TODAY_JA3})
+    assert next(f for f in r.fields if f.field == "ja3").status == "mismatch"

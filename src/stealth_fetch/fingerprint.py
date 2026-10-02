@@ -26,6 +26,40 @@ TLS_PEET_FIELDS = {
 }
 
 
+# ---------- JA3 稳健对比（2026-10-03 两天实测定论） ----------
+#
+# 实证：curl_cffi impersonate=chrome 隔日两次观测——密码套件段完全一致，
+# 扩展集合完全一致（含 17613/ALPS 旧版与 65037/ECH 两者都在），
+# 唯一差异是**扩展顺序洗牌**（Chrome 的扩展顺序随机化，反指纹设计）。
+# 因此原始 JA3 字符串对比会对同一 profile 误报 mismatch。
+# 处理：删 GREASE + 扩展按集合比较（顺序不敏感）→ 正确判 match；
+# 若集合真有差异，差异 ID 如实列进 note 作为证据。JA4 天然抗序（实测两日 match）。
+
+# IETF GREASE 值（RFC 8701）：0x0a0a, 0x1a1a ... 0xfafa
+GREASE_IDS = frozenset(0x0A0A + 0x1010 * i for i in range(16))  # 0x0a0a,0x1a1a...0xfafa 双字节同步递增
+
+
+def normalize_ja3(ja3: str | None) -> str | None:
+    """去掉 JA3 各段中的 GREASE 值（套件/扩展），保留真实指纹成分。"""
+    if not isinstance(ja3, str) or not ja3.strip():
+        return None
+    parts = ja3.strip().split(",")
+    out = [parts[0]]
+    for seg in parts[1:]:
+        keep = [x for x in seg.split("-") if not (x.isdigit() and int(x) in GREASE_IDS)]
+        out.append("-".join(keep))
+    return ",".join(out)
+
+
+def _ja3_sets(ja3: str) -> tuple[str, frozenset, frozenset] | None:
+    parts = ja3.split(",")
+    if len(parts) < 3:
+        return None
+    suites = frozenset(x for x in parts[1].split("-") if x and int(x) not in GREASE_IDS)
+    exts = frozenset(x for x in parts[2].split("-") if x and int(x) not in GREASE_IDS)
+    return parts[0], suites, exts
+
+
 # ---------- HTTP/2 指纹参数化（模型思路取自 reqrio H2Finger；参数值来自本项目实测基线） ----------
 
 @dataclass(frozen=True)
@@ -173,6 +207,18 @@ def compare_fingerprints(observed: dict, baseline: dict, *,
             comps.append(FieldComparison(key, "match" if ov == bv else "mismatch", ov, bv,
                                          note="akamai 非标准格式，退化为字符串对比"))
             continue
+        if key == "ja3":
+            so, sb = _ja3_sets(normalize_ja3(ov) or ""), _ja3_sets(normalize_ja3(bv) or "")
+            if so and sb:
+                match = so[0] == sb[0] and so[1] == sb[1] and so[2] == sb[2]
+                note = "GREASE 归一化+扩展顺序不敏感对比"
+                if so[1] != sb[1]:
+                    note += f"；密码套件差异: {sorted(so[1] ^ sb[1])}"
+                if so[2] != sb[2]:
+                    only_o, only_b = sorted(so[2] - sb[2]), sorted(sb[2] - so[2])
+                    note += f"；仅观测侧扩展 {only_o} 仅基线侧 {only_b}（ECH/ALPS 类随环境变化）"
+                comps.append(FieldComparison(key, "match" if match else "mismatch", ov, bv, note=note))
+                continue
         comps.append(FieldComparison(
             key, "match" if ov == bv else "mismatch", ov, bv,
             note="摘要相等仅表示该层特征一致，不等于浏览器实现逐字节一致" if key in ("ja3", "ja4") else ""))
