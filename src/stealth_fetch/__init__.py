@@ -13,6 +13,7 @@ from .exceptions import (
 )
 from .fingerprint import (
                          FingerprintReport,
+                         Http2Finger,
                          collect_observation,
                          compare_fingerprints,
                          load_baseline_from_fixture,
@@ -55,6 +56,7 @@ __all__ = [
                          "FingerprintParseError",
                          "FingerprintReport",
                          "Headers",
+                         "Http2Finger",
                          "LogicalCookieJar",
                          "MigrationResult",
                          "MockSolverProvider",

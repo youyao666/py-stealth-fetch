@@ -61,6 +61,9 @@ asyncio.run(main())
 - **异常分类**：参数/配置/证书验证/编程错误直接上抛，绝不包装成"被封锁"；`CancelledError` 原样传播。
 - **会话**：客户端持有逻辑 CookieJar（域/路径感知），跨引擎延续；响应头保留重复项（`get_all`）。
 - **指纹对比四态**：match / mismatch / **missing / unavailable**——任一侧缺值绝不判 match；JA3/JA4 相同仅表示该层特征一致，不宣称浏览器逐字节一致。
+- **HTTP/2 指纹参数化**（`Http2Finger`，模型思路取自 reqrio H2Finger）：akamai 字符串 ↔ 参数互转，
+  对比展开到逐 SETTING/窗口/伪头顺序级，精确定位哪个参数偏了；chrome 预设值来自实测基线而非文档。
+  `BrowserProfile` 升级为三层指纹声明（ja3/ja4/h2_finger），引擎能力区分"预设控制层"与"可参数化层"。
 
 ## 文档
 

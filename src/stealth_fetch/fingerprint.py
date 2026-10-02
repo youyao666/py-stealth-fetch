@@ -26,12 +26,86 @@ TLS_PEET_FIELDS = {
 }
 
 
+# ---------- HTTP/2 指纹参数化（模型思路取自 reqrio H2Finger；参数值来自本项目实测基线） ----------
+
+@dataclass(frozen=True)
+class Http2Finger:
+    """HTTP/2 指纹的参数化模型（对应观察服务的 akamai 字符串）。
+
+    akamai 实测样本：`1:65536;2:0;4:6291456;6:262144|15663105|0|m,a,s,p`
+      = SETTINGS(id:value 按序) | 连接级 WINDOW_UPDATE | 未建模段(原样保留) | 伪头顺序
+    解析失败返回 None（不猜）；未建模段透传保真。
+    """
+    settings: tuple[tuple[int, int], ...]
+    window_update: int
+    pseudo_order: tuple[str, ...]
+    extra_segments: tuple[str, ...] = ()
+
+    @classmethod
+    def from_akamai(cls, raw: str | None) -> Http2Finger | None:
+        if not isinstance(raw, str) or "|" not in raw:
+            return None
+        parts = raw.split("|")
+        if len(parts) < 4:
+            return None
+        settings = []
+        try:
+            for item in parts[0].split(";"):
+                if not item:
+                    continue
+                k, _, v = item.partition(":")
+                settings.append((int(k), int(v)))
+            window_update = int(parts[1])
+        except ValueError:
+            return None
+        pseudo = tuple(parts[-1].split(","))
+        extra = tuple(parts[2:-1])
+        if not settings:
+            return None
+        return cls(settings=tuple(settings), window_update=window_update,
+                   pseudo_order=pseudo, extra_segments=extra)
+
+    def to_akamai(self) -> str:
+        settings = ";".join(f"{k}:{v}" for k, v in self.settings)
+        return "|".join([settings, str(self.window_update), *self.extra_segments,
+                         ",".join(self.pseudo_order)])
+
+    @classmethod
+    def chrome(cls) -> Http2Finger:
+        """curl_cffi impersonate=chrome 的实测参数（基线 fixture，2026-10-02）。"""
+        return cls(settings=((1, 65536), (2, 0), (4, 6291456), (6, 262144)),
+                   window_update=15663105, pseudo_order=("m", "a", "s", "p"),
+                   extra_segments=("0",))
+
+    def as_settings_map(self) -> dict[int, int]:
+        return dict(self.settings)
+
+    def diff(self, other: Http2Finger) -> list[FieldComparison]:
+        """参数级对比：定位到具体哪个 SETTING/窗口/伪头顺序不一致。"""
+        comps: list[FieldComparison] = []
+        a, b = self.as_settings_map(), other.as_settings_map()
+        for k in sorted(set(a) | set(b)):
+            name = f"h2.setting[{k}]"
+            if k not in a or k not in b:
+                comps.append(FieldComparison(name, "missing", a.get(k), b.get(k),
+                                             note="一侧缺少该 SETTINGS 项"))
+            elif a[k] != b[k]:
+                comps.append(FieldComparison(name, "mismatch", a[k], b[k]))
+            else:
+                comps.append(FieldComparison(name, "match", a[k], b[k]))
+        for name, x, y in (("h2.window_update", self.window_update, other.window_update),
+                           ("h2.pseudo_order", ",".join(self.pseudo_order),
+                            ",".join(other.pseudo_order))):
+            comps.append(FieldComparison(name, "match" if x == y else "mismatch", x, y))
+        return comps
+
+
 @dataclass
 class FieldComparison:
     field: str
     status: str          # match / mismatch / missing / unavailable
-    observed: str | None = None
-    baseline: str | None = None
+    observed: str | int | None = None
+    baseline: str | int | None = None
     note: str = ""
 
 
@@ -85,10 +159,23 @@ def compare_fingerprints(observed: dict, baseline: dict, *,
             status = os_ if os_ != "ok" else bs
             note = {"missing": "字段缺失", "unavailable": "字段存在但值为空"}[status]
             comps.append(FieldComparison(key, status, ov, bv, note))
-        else:
-            comps.append(FieldComparison(
-                key, "match" if ov == bv else "mismatch", ov, bv,
-                note="摘要相等仅表示该层特征一致，不等于浏览器实现逐字节一致" if key in ("ja3", "ja4") else ""))
+            continue
+        if key == "akamai":
+            # HTTP/2 指纹走参数级对比：定位到具体 SETTINGS/窗口/伪头顺序
+            fo, fb = Http2Finger.from_akamai(ov), Http2Finger.from_akamai(bv)
+            if fo is not None and fb is not None:
+                detail = fo.diff(fb)
+                comps.append(FieldComparison(
+                    key, "match" if all(c.status == "match" for c in detail) else "mismatch",
+                    ov, bv, note=f"参数级对比 {len(detail)} 项（见 h2.* 子字段）"))
+                comps.extend(detail)
+                continue
+            comps.append(FieldComparison(key, "match" if ov == bv else "mismatch", ov, bv,
+                                         note="akamai 非标准格式，退化为字符串对比"))
+            continue
+        comps.append(FieldComparison(
+            key, "match" if ov == bv else "mismatch", ov, bv,
+            note="摘要相等仅表示该层特征一致，不等于浏览器实现逐字节一致" if key in ("ja3", "ja4") else ""))
     comparable = [c for c in comps if c.status in ("match", "mismatch")]
     overall = "unknown"
     if comparable:

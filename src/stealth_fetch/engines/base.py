@@ -15,11 +15,18 @@ from ..models import Request, Response
 
 class EngineCapabilities:
     def __init__(self, *, supports_cookies: bool, supports_redirects: bool,
-                 supported_profiles: tuple, engine_version: str):
+                 supported_profiles: tuple, engine_version: str,
+                 preset_controlled_layers: tuple = ("tls", "h2"),
+                 parameterized_layers: tuple = ()):
         self.supports_cookies = supports_cookies
         self.supports_redirects = supports_redirects
         self.supported_profiles = supported_profiles   # 引擎真实接受的 profile 标识
         self.engine_version = engine_version
+        # 指纹控制能力分层（思路取自 reqrio，按本引擎实况声明）：
+        # preset_controlled：引擎按预设整体控制的层（如 impersonate 连带 H2 SETTINGS）
+        # parameterized：调用方可逐参数控制的层（当前引擎均无；reqrio 成熟后可补）
+        self.preset_controlled_layers = preset_controlled_layers
+        self.parameterized_layers = parameterized_layers
 
 
 class BaseEngine(ABC):
