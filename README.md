@@ -8,10 +8,24 @@
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
-.venv/bin/python -m pytest tests/ -q     # 39 个离线测试（不联网、不依赖公开站点）
+.venv/bin/python -m pytest tests/ -q     # 71 个离线测试（四引擎契约 + 策略 + 模型 + 指纹）
 ```
 
-核心包**零第三方依赖**；curl_cffi 通过 extra 引入（引擎内懒导入，未安装时给出明确错误而不是崩溃）。
+核心包**零第三方依赖**；引擎按 extra 安装：`.[curl_cffi]`（默认推荐）/ `.[chrome_fp]` / `.[wreq]` / `.[httpcloak]`，均懒导入，未安装时给出明确错误。primp 阻塞、rnet 因 GPL 不接——见 `docs/engines.md`。
+
+## 引擎
+
+```python
+from stealth_fetch import AsyncClient
+from stealth_fetch.engines.curl_cffi_engine import CurlCffiEngine
+from stealth_fetch.engines.chrome_fp_engine import ChromeFpEngine   # 同步库 → 内部线程化
+from stealth_fetch.engines.wreq_engine import WreqEngine
+from stealth_fetch.engines.httpcloak_engine import HttpCloakEngine
+
+client = AsyncClient(engines=[CurlCffiEngine(), WreqEngine()])  # 显式有序链；None 才用默认
+```
+
+能力差异（重复头/重定向/超时/查询参数等，全部实测）：`docs/engines.md`。所有引擎通过同一套契约测试；chrome-fp 取消语义限制（线程内阻塞请求不可中断，靠底层超时兜底）见其适配器 docstring。
 
 ## 快速开始
 

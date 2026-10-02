@@ -149,7 +149,12 @@ class AsyncClient:
             resp.classification = classify_response(
                 resp, success_predicate=success_predicate,
                 challenge_predicate=challenge_predicate)
-            self.jar.update_from_response(resp.headers.get_all("set-cookie"), host)
+            # 优先用引擎导出的结构化 cookie（会话 jar 同步），否则解析响应头
+            if resp.cookie_records:
+                for rec in resp.cookie_records:
+                    self.jar.store(rec)
+            else:
+                self.jar.update_from_response(resp.headers.get_all("set-cookie"), host)
             attempts.extend(resp.attempts)
 
             plan = decide(policy, resp, attempt=attempt_no,

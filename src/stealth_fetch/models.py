@@ -211,6 +211,9 @@ class Response:
     attempts: list[AttemptRecord] = field(default_factory=list)
     classification: Classification | None = None
     engine: str = ""
+    # 引擎响应头丢失重复 Set-Cookie 时（如 chrome-fp/httpcloak），适配器从其会话
+    # cookie jar 导出结构化记录走此通道，客户端据此更新逻辑会话
+    cookie_records: list[CookieRecord] | None = None
 
     def text(self) -> str:
         """按编码派生（审计要求：不与 content 各自维护一份状态）。"""
