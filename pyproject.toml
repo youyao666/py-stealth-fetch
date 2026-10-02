@@ -5,10 +5,20 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "py-stealth-fetch"
 version = "0.1.0"
-description = "可验证浏览器指纹语义的异步 HTTP 客户端（统一响应/会话/策略契约，默认 curl_cffi 传输）"
+description = "可验证浏览器指纹语义的异步 HTTP 客户端（统一响应/会话/策略契约，四引擎实测适配）"
 readme = "README.md"
 requires-python = ">=3.11"
-# 许可证待定：未写 license 字段与 SPDX 头（docs/dependency-audit.md 有说明）
+license = "MIT"
+license-files = ["LICENSE"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP",
+    "Framework :: AsyncIO",
+]
 dependencies = []
 
 [project.optional-dependencies]

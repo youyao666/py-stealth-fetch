@@ -30,10 +30,11 @@
 | CI 实际运行 | 仓库尚未推送远端；workflow 待首次 push 验证 |
 | 包发布（PyPI） | 按本轮指示明确不做 |
 
-## 阻塞项（发行前必须解决）
+## 阻塞项（2026-10-03 更新：均已解除）
 
-1. **许可证待定**：`pyproject.toml` 无 license 字段、源码无 SPDX。公开发布前必须定（注意：接入 rnet 会引入 GPL 传染，当前未接）。
-2. **仓库未推送**：CI 与协作需要远端（GitHub 建仓待定：账号/组织、公开/私有）。
+1. ~~许可证待定~~ → **已定 MIT**（LICENSE + pyproject license 字段 + classifiers）。
+2. ~~仓库未推送~~ → 已推送 GitHub（youyao666/py-stealth-fetch），CI 三矩阵绿；**已转公开**（开源）。
+   （备注：rnet 的 GPL 传染风险依旧存在，当前未接、不提供 extra。）
 
 ## 审计提示词 7 逐项对照
 

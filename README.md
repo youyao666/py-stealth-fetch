@@ -88,6 +88,10 @@ async with AsyncClient() as client:
 
 solver 只提供契约 + 离线 Mock（`MockSolverProvider`）；真实 solver 因服务协议未核验**未接入**（不猜 `/solve` 字段），Turnstile token 与 cf_clearance 分别建模。范围声明见 `docs/hybrid.md`。
 
+## 介绍与文档
+
+完整项目介绍（为什么造、能力全景、设计纪律、路线图）：`docs/INTRODUCTION.md`
+
 ## 许可证
 
-**待定**：未写 license 字段与 SPDX 头，不得复制带虚假声明的内容（见 dependency-audit.md）。
+MIT（见 [LICENSE](LICENSE)）。
