@@ -31,6 +31,21 @@
 - 无会话 cookies 属性、无 close/aclose；
 - 结论：不满足"能确认真实 API"的接入门槛，**不写适配器**；待上游版本更新后重验。
 
+## reqrio 0.3.1 / 0.4.0a3 阻塞详情（2026-10-02 全平台实测）
+
+PyPI 元数据：Apache-2.0 / ≥3.9 / "fingerprint-based HTTP request library"（GitHub ★17，上游活跃，当日仍有提交）。
+能力面有吸引力（`Fingerprint_from_ja3/ja4/custom/random`——自定义 JA3/JA4，强于 impersonate 预设；Session 为同步 requests 风格），但**当前不可集成**：
+
+| 平台 | 结果 | 证据 |
+|---|---|---|
+| macOS（本机 3.14） | ❌ | bindings.py 只带 reqrio.dll / libreqrio.so，无 dylib，直接 `raise Exception('unsupported platform')` |
+| Python 3.14 | ❌ | `from _ctypes import POINTER` 失败（其自带 import 写法在 3.14 不可用；3.11 可过此关） |
+| Linux Debian slim（glibc 2.36, py3.12, Docker 实测） | ❌ | `libreqrio.so` dlopen 报 "cannot open shared object file"；ldd 判定 **"not a dynamic executable"**；ELF 头是 DYN/x86-64 但无可加载动态段 |
+| Linux Ubuntu 24.04（glibc 2.39, py3.12） | ❌ | 同样错误；**0.4.0a3（当日版）同样失败** |
+
+结论：发行的二进制在两个主流 Linux 发行版都无法加载，macOS 无构建——**不写适配器**。
+上游活跃（0.4.0 alpha 系列、issue 提及 async），建议跟踪其 release，出可用 Linux/macOS 构建后按"核验→适配→契约测试"流程重验。
+
 ## rnet
 
 GPL-3.0（PyPI 元数据）。作为库依赖分发会传染 GPL，默认不接入、不提供 extra（决策见 dependency-audit.md）。
