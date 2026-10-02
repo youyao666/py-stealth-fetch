@@ -9,6 +9,10 @@ from .models import Classification, CookieRecord, Headers, LogicalCookieJar, Req
 from .policy import RetryPolicy, parse_retry_after
 from .fingerprint import (FingerprintReport, compare_fingerprints, collect_observation,
                           load_baseline_from_fixture, parse_observation)
+from .hybrid import (BrowserSessionSnapshot, ClearanceCookie, MigrationResult,
+                     SessionMigrator, SnapshotCookie, TurnstileToken)
+from .providers import (BaseSolverProvider, MockSolverProvider, ProviderHealth,
+                        SolverRequest, SolverResult)
 
 __version__ = "0.1.0"
 
@@ -19,4 +23,7 @@ __all__ = [
     "BudgetExceededError", "RateLimitedError", "EngineClosedError", "FingerprintParseError",
     "parse_retry_after", "parse_observation", "compare_fingerprints",
     "FingerprintReport", "load_baseline_from_fixture", "collect_observation",
+    "BrowserSessionSnapshot", "SnapshotCookie", "SessionMigrator", "MigrationResult",
+    "TurnstileToken", "ClearanceCookie",
+    "BaseSolverProvider", "MockSolverProvider", "ProviderHealth", "SolverRequest", "SolverResult",
 ]

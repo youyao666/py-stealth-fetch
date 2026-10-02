@@ -65,8 +65,25 @@ asyncio.run(main())
 ## 文档
 
 - `docs/dependency-audit.md` — 依赖证据表（哪些实测、哪些仅元数据、rnet 的 GPL 提示、tls.peet.ws 真实 schema）
+- `docs/engines.md` — 四引擎能力矩阵与已绕过的上游缺陷清单
 - `docs/architecture.md` — 设计与审计问题对照表、后续阶段接口
+- `docs/hybrid.md` — 会话迁移与验证 provider（含"什么没做"的范围声明）
 - `docs/fixtures/tls_peet_clean.json` — 2026-10-02 实测采样的真实 schema 基线
+
+## 会话迁移与 provider（阶段 5）
+
+```python
+from stealth_fetch import AsyncClient, SessionMigrator
+
+async with AsyncClient() as client:
+    snapshot = BrowserSessionSnapshot.from_json(browser_exported_json)
+    r = await SessionMigrator(client).migrate(
+        snapshot, "https://target.example/",
+        success_predicate=lambda resp: "welcome" in resp.text())   # 成功只由谓词判定
+    print(r.summary())   # 不含 Cookie/token 原值
+```
+
+solver 只提供契约 + 离线 Mock（`MockSolverProvider`）；真实 solver 因服务协议未核验**未接入**（不猜 `/solve` 字段），Turnstile token 与 cf_clearance 分别建模。范围声明见 `docs/hybrid.md`。
 
 ## 许可证
 
