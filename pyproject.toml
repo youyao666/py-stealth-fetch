@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "py-stealth-fetch"
+version = "0.1.0"
+description = "可验证浏览器指纹语义的异步 HTTP 客户端（统一响应/会话/策略契约，默认 curl_cffi 传输）"
+readme = "README.md"
+requires-python = ">=3.11"
+# 许可证待定：未写 license 字段与 SPDX 头（docs/dependency-audit.md 有说明）
+dependencies = []
+
+[project.optional-dependencies]
+curl_cffi = ["curl_cffi>=0.16,<0.17"]
+dev = ["pytest>=8", "pytest-asyncio>=0.24", "curl_cffi>=0.16,<0.17"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
