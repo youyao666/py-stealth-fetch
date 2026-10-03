@@ -71,6 +71,7 @@ asyncio.run(main())
 - `docs/engines.md` — 四引擎能力矩阵与已绕过的上游缺陷清单
 - `docs/architecture.md` — 设计与审计问题对照表、后续阶段接口
 - `docs/hybrid.md` — 会话迁移与验证 provider（含"什么没做"的范围声明）
+- `docs/COMPATIBILITY.md` — 兼容性承诺（公开面冻结/行为契约/稳定性分级/弃用流程）
 - `docs/fixtures/tls_peet_clean.json` — 2026-10-02 实测采样的真实 schema 基线
 
 ## 会话迁移与 provider（阶段 5）

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "py-stealth-fetch"
-version = "0.1.0"
+version = "0.2.0"
 description = "可验证浏览器指纹语义的异步 HTTP 客户端（统一响应/会话/策略契约，四引擎实测适配）"
 readme = "README.md"
 requires-python = ">=3.11"

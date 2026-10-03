@@ -1,0 +1,32 @@
+name: publish
+
+# 手动触发发布到 PyPI（需在仓库 Secrets 配置 PYPI_API_TOKEN）。
+# 默认不运行；发布前先打 tag。
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "要发布的 tag（如 v0.2.0）"
+        required: true
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 构建产物
+        run: |
+          pip install build
+          python -m build
+      - name: 发布到 PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          pip install twine
+          twine upload dist/*
