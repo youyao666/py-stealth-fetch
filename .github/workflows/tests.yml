@@ -6,7 +6,8 @@ on:
   pull_request:
 
 jobs:
-  offline-tests:
+  # 主矩阵：Linux × 三 Python 版本，全量质量门
+  offline-tests-linux:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -23,7 +24,7 @@ jobs:
           pip install ruff mypy
           ruff check src/ tests/ examples/
           mypy src/stealth_fetch/
-      - name: 测试（离线：本地 HTTP 服务 + fake engine + fixture，不请求公开站点）
+      - name: 测试（离线：本地 HTTP/代理服务 + fake engine + fixture，不请求公开站点）
         run: pytest tests/ -q
       - name: 构建 wheel
         run: |
@@ -34,3 +35,27 @@ jobs:
           python -m venv /tmp/isolated
           /tmp/isolated/bin/pip install dist/*.whl
           /tmp/isolated/bin/python -c "import stealth_fetch; print(stealth_fetch.__version__)"
+
+  # 平台矩阵（P0-4）：真实使用平台 Windows/macOS；引擎缺轮子时对应测试自动跳过
+  offline-tests-platform:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            python-version: "3.12"
+          - os: macos-latest
+            python-version: "3.12"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: 安装核心 + 默认引擎
+        run: pip install -e ".[curl_cffi]" pytest pytest-asyncio
+      - name: 其余引擎尽力安装（缺轮子则对应契约测试自动跳过并如实显示）
+        run: pip install chrome-fp wreq httpcloak
+        continue-on-error: true
+      - name: 测试
+        run: pytest tests/ -q -rs

@@ -111,6 +111,14 @@ class CurlCffiEngine(BaseEngine):
                                     outcome="responded")],
         )
 
+    async def upkeep(self) -> None:
+        """curl_cffi 的连接池维护（实测存在 upkeep 方法）。"""
+        if self._session is not None:
+            try:
+                self._session.upkeep()
+            except Exception:
+                pass
+
     async def aclose(self) -> None:
         """幂等关闭真实会话。
 

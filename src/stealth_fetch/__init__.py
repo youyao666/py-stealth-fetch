@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from .client import AsyncClient
+from .client import AsyncClient, EventHooks
 from .config import BrowserProfile, ClientConfig
 from .exceptions import (
                          BudgetExceededError,
@@ -8,6 +8,7 @@ from .exceptions import (
                          FingerprintParseError,
                          NotSupportedError,
                          RateLimitedError,
+                         ResponseTooLargeError,
                          StealthFetchError,
                          TransportError,
 )
@@ -53,6 +54,7 @@ __all__ = [
                          "CookieRecord",
                          "EngineClosedError",
                          "EngineMatrix",
+                         "EventHooks",
                          "FingerprintParseError",
                          "FingerprintReport",
                          "Headers",
@@ -65,6 +67,7 @@ __all__ = [
                          "RateLimitedError",
                          "Request",
                          "Response",
+                         "ResponseTooLargeError",
                          "RetryPolicy",
                          "SessionMigrator",
                          "SnapshotCookie",

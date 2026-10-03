@@ -49,5 +49,17 @@ class RateLimitedError(StealthFetchError):
         self.attempts = attempts or []
 
 
+class ResponseTooLargeError(StealthFetchError):
+    """响应体超过 max_response_bytes 上限（稳定性护栏：防超大响应拖垮进程）。
+
+    注意：底层引擎完成读取后才检查（本版不做流式截断）；错误携带已读取字节数。
+    """
+
+    def __init__(self, message: str, received_bytes: int = 0, limit: int = 0):
+        super().__init__(message)
+        self.received_bytes = received_bytes
+        self.limit = limit
+
+
 class FingerprintParseError(StealthFetchError, ValueError):
     """指纹响应不是合法 JSON、Content-Type 不符或结构不符合已知 schema。"""

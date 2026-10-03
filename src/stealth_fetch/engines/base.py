@@ -44,6 +44,9 @@ class BaseEngine(ABC):
     async def aclose(self) -> None:
         """尽力释放底层会话；可重复调用。"""
 
+    async def upkeep(self) -> None:  # noqa: B027 可选钩子，非强制抽象
+        """空闲连接维护（长跑服务用）；默认无操作，有需要的引擎覆写。"""
+
     def validate_profile(self, engine_profile: str) -> None:
         caps = self.capabilities()
         if engine_profile not in caps.supported_profiles:

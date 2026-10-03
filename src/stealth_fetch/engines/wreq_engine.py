@@ -72,7 +72,8 @@ class WreqEngine(BaseEngine):
         if request.json is not None:
             kwargs["json"] = request.json
         if request.proxy:
-            kwargs["proxy"] = request.proxy
+            # 实测：proxy 需 Proxy 对象（字符串会 TypeError）；Proxy.all 为全协议工厂
+            kwargs["proxy"] = self._import().proxy.Proxy.all(request.proxy)
         if request.verify is False:
             raise NotSupportedError("wreq 适配器暂不支持关闭证书验证（verify=False）")
         try:

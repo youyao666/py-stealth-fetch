@@ -25,6 +25,7 @@ class HttpCloakEngine(BaseEngine):
     def __init__(self, engine_profile: str = "chrome"):
         self._engine_profile = engine_profile
         self._session = None
+        self._session_proxy: str | None = None   # httpcloak 的 proxy 是会话级（实测）；变更需重建会话
         self._closed = False
 
     def _import(self):
@@ -43,18 +44,35 @@ class HttpCloakEngine(BaseEngine):
             supported_profiles=("chrome",),     # preset 默认 chrome 系；未做全量枚举
             engine_version="1.7.2")
 
-    def _ensure_session(self):
+    def _ensure_session(self, proxy: str | None = None):
         if self._closed:
             raise EngineClosedError("httpcloak 引擎已关闭")
+        if self._session is not None and proxy != self._session_proxy:
+            # 会话级代理变更：重建（Cookie 连续性由客户端逻辑 jar 经显式 cookies 参数兜住）
+            self._close_session()
         if self._session is None:
             httpcloak = self._import()
             self.validate_profile(self._engine_profile)
-            self._session = httpcloak.Session()   # 默认 preset=chrome 系（docstring）
+            self._session = httpcloak.Session(proxy=proxy) if proxy else httpcloak.Session()
+            self._session_proxy = proxy
         return self._session
+
+    def _close_session(self):
+        if self._session is not None:
+            try:
+                close = self._session.close
+                if inspect.iscoroutinefunction(close):
+                    import asyncio
+                    asyncio.get_event_loop().run_until_complete(close())
+                else:
+                    close()
+            except Exception:
+                pass
+            self._session = None
 
     async def request(self, request: Request, *, cookies: dict | None = None,
                       effective_timeout: float | None = None) -> Response:
-        session = self._ensure_session()
+        session = self._ensure_session(proxy=request.proxy)
         started = time.monotonic()
         timeout_s = effective_timeout if effective_timeout is not None else (request.timeout or 30.0)
         timeout_cap = min(timeout_s, 60.0)
@@ -67,8 +85,6 @@ class HttpCloakEngine(BaseEngine):
             kwargs["data"] = request.data
         if request.json is not None:
             kwargs["json"] = request.json
-        if request.proxy:
-            kwargs["proxies"] = {"http": request.proxy, "https": request.proxy}
         if not request.allow_redirects:
             kwargs["allow_redirects"] = False
         if request.verify is False:

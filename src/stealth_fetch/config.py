@@ -16,6 +16,11 @@ class ClientConfig:
     verify: bool = True
     allow_redirects: bool = True
     policy: RetryPolicy = field(default_factory=RetryPolicy)
+    # 响应体上限（字节）：超过即抛 ResponseTooLargeError，不重试。
+    # None 表示不限制（不建议长跑服务使用）。
+    max_response_bytes: int | None = 10 * 1024 * 1024
+    # 空闲连接维护间隔（秒）：超过间隔的首次请求前对引擎执行 upkeep；None 关闭。
+    upkeep_interval_s: float | None = 30.0
 
 
 @dataclass(frozen=True)

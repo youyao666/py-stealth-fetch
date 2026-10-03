@@ -46,6 +46,9 @@ class RetryPolicy:
     retry_503: bool = True
     on_rate_limit_exhausted: str = "return_response"   # return_response | raise
     max_rate_limit_waits: int = 1         # 429 在预算内的最多额外等待次数
+    # 引擎熔断（P1-5）：连续传输失败达到阈值 → 冷却窗口内跳过该引擎；全部冷却则降级用首个
+    circuit_failure_threshold: int = 2
+    circuit_cooldown_s: float = 30.0
 
     # 可注入（确定性测试）
     sleeper: Sleeper = staticmethod(lambda s: asyncio.sleep(s))  # noqa: RUF009 可注入

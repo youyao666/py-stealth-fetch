@@ -2,6 +2,8 @@
 """共享 fixture：本地线程 HTTP 服务（真实 socket，零第三方）。"""
 import http.server
 import json
+import socket
+import socketserver
 import threading
 import urllib.parse
 
@@ -61,6 +63,16 @@ class Router(http.server.BaseHTTPRequestHandler):
         elif p.path == "/challenge":
             self._send(200, b'<html>please complete the captcha</html>',
                        [("Content-Type", "text/html")])
+        elif p.path.startswith("/setvar/"):
+            i = p.path.rsplit("/", 1)[1]
+            self._send(200, b"ok", [("Set-Cookie", f"c{i}={i}; Path=/")])
+        elif p.path == "/allcookies":
+            self._send(200, json.dumps({"cookie": self.headers.get("Cookie", "")}).encode(),
+                       [("Content-Type", "application/json")])
+        elif p.path == "/big":
+            self._send(200, b"x" * 100_000, [("Content-Type", "application/octet-stream")])
+        elif p.path == "/viaproxy":
+            self._send(200, b"via-proxy-ok", [])
         else:
             self._send(404, b"nf", [])
 
@@ -87,4 +99,101 @@ def local_base():
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     yield f"http://127.0.0.1:{srv.server_address[1]}"
     srv.shutdown()
+
+
+# ---------- 本地迷你 HTTP 正向代理（P0-2：验证引擎的 proxy 参数真实生效） ----------
+
+class _MiniProxyHandler(socketserver.BaseRequestHandler):
+    seen: list = []          # noqa: RUF012 类属性（fixture 每次重置）
+
+    def handle(self):
+        data = b""
+        while b"\r\n\r\n" not in data:
+            chunk = self.request.recv(65536)
+            if not chunk:
+                return
+            data += chunk
+        head, _, rest = data.partition(b"\r\n\r\n")
+        lines = head.decode("latin-1").splitlines()
+        method, target, _ver = lines[0].split()
+        if method == "CONNECT":
+            # CONNECT 隧道（chrome_fp 等对明文目标也走隧道）
+            host, port = target.rsplit(":", 1)
+            _MiniProxyHandler.seen.append(target)
+            print(f"[proxy] {lines[0][:90]}")
+            try:
+                upstream = socket.create_connection((host, int(port)), timeout=10)
+            except OSError:
+                self.request.sendall(b"HTTP/1.1 502 Bad Gateway\r\nContent-Length: 0\r\n\r\n")
+                return
+            self.request.sendall(b"HTTP/1.1 200 Connection Established\r\n\r\n")
+            self._pipe(self.request, upstream)
+            return
+        # 正向代理收到绝对形式请求行：GET http://host:port/path HTTP/1.1
+        host_port = urllib.parse.urlsplit(target).netloc
+        _MiniProxyHandler.seen.append(host_port)
+        print(f"[proxy] {lines[0][:90]}")
+        # 把请求行改回相对形式后原样转发（仅支持明文 HTTP 目标，测试够用）
+        rel = lines[0].replace(target, urllib.parse.urlsplit(target).path or "/")
+        out_head = "\r\n".join([rel, *lines[1:]]).encode("latin-1") + b"\r\n\r\n"
+        # 取 Content-Length 决定 body 长度
+        clen = 0
+        for line in lines[1:]:
+            if line.lower().startswith("content-length:"):
+                clen = int(line.split(":", 1)[1])
+        while len(rest) < clen:
+            chunk = self.request.recv(65536)
+            if not chunk:
+                break
+            rest += chunk
+        try:
+            upstream = socket.create_connection(("127.0.0.1", int(host_port.rsplit(":", 1)[1])), timeout=10)
+        except OSError:
+            self.request.sendall(b"HTTP/1.1 502 Bad Gateway\r\nContent-Length: 0\r\n\r\n")
+            return
+        upstream.sendall(out_head + rest)
+        self._pipe(self.request, upstream)
+
+    @staticmethod
+    def _pipe(a, b):
+        """双向转发直到任一侧关闭。"""
+        import select
+        sockets = [a, b]
+        while sockets:
+            readable, _w, _e = select.select(sockets, [], [], 15)
+            if not readable:
+                break
+            for src in readable:
+                try:
+                    data = src.recv(65536)
+                except OSError:
+                    data = b""
+                if not data:
+                    for sck in sockets:
+                        try:
+                            sck.close()
+                        except OSError:
+                            pass
+                    return
+                dst = b if src is a else a
+                try:
+                    dst.sendall(data)
+                except OSError:
+                    return
+
+
+class _ThreadingProxy(socketserver.ThreadingTCPServer):
+    allow_reuse_address = True
+    daemon_threads = True
+
+
+@pytest.fixture()
+def mini_proxy():
+    """返回 (proxy_url, seen_list)。断言流量确实经过代理。"""
+    _MiniProxyHandler.seen = []
+    srv = _ThreadingProxy(("127.0.0.1", 0), _MiniProxyHandler)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    yield f"http://127.0.0.1:{srv.server_address[1]}", _MiniProxyHandler.seen
+    srv.shutdown()
+    srv.server_close()
     srv.server_close()
