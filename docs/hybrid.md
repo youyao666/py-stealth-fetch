@@ -9,7 +9,7 @@
 | TurnstileToken / ClearanceCookie 建模 | ✅ 已实现 | 分别建模、互不混用；token 一次性/5 分钟/需后端校验（官方文档语义） |
 | MockSolverProvider | ✅ 已实现 | 测试/开发用，行为可注入，离线 |
 | 真实 solver（EzSolver / cfts-solver） | ❌ **未接入** | 服务协议未做源码级核验（路由/参数/结果结构/轮询方式），**不猜测 `/solve` 或 token 字段**；接入前置条件见 `providers.py` 尾注 |
-| PlaywrightCaptchaProvider（playwright-captcha + patchright） | 🟡 **已接入，效力部分验证** | 2026-10-03 实测：页面→Turnstile→token 链路真实可用（官方测试 sitekey 返回 dummy token）；**ClickSolver 真实点击效力未验证**——官方测试密钥不产生真实交互挑战，验证需持有人自己的 sitekey（授权环境）。依赖 `.[captcha]` extra，页面由调用方注入 |
+| PlaywrightCaptchaProvider（playwright-captcha + patchright） | 🟡 **已接入，三环境实证 + 真挑战不可公开验证** | 2026-10-03 三环境实测（本地页 / CF 官方 demo.turnstile.workers.dev / 2captcha demo）：页面→Turnstile→token 链路全部真实可用；**CF 官方 demo 与 2captcha demo 也都用官方测试 key**（1x..AA / 3x..FF），公网不存在真实生产挑战（真 key 域名绑定）。重要旁证：patchright+真 Chrome 下连"强制挑战"key 都自动放行（无交互直接发 dummy token）——说明浏览器层 stealth 达标，ClickSolver 仅在 CF 风控引擎决定交互挑战时才需要；其点击效力只能在持有人自己 sitekey 的授权环境验证。依赖 `.[captcha]`，页面由调用方注入 |
 | 授权环境实测 | ❌ 未做 | 本轮全部为本地模拟 |
 
 ## 迁移语义（对应审计要求）
