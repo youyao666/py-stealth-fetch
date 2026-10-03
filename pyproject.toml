@@ -25,6 +25,7 @@ curl_cffi = ["curl_cffi>=0.16,<0.17"]
 chrome_fp = ["chrome-fp>=0.5,<0.6"]
 wreq = ["wreq>=0.12,<0.13"]
 httpcloak = ["httpcloak>=1.7,<1.8"]
+captcha = ["playwright-captcha>=0.1", "playwright>=1.40"]
 # primp 2.0.1 实测阻塞（无法启用 impersonate、UA 泄漏 Go-http-client、无会话 Cookie/关闭），
 # 不提供 extra；rnet 为 GPL-3.0，默认不接入。详见 docs/engines.md
 dev = ["pytest>=8", "pytest-asyncio>=0.24", "curl_cffi>=0.16,<0.17",

@@ -9,6 +9,7 @@
 | TurnstileToken / ClearanceCookie 建模 | ✅ 已实现 | 分别建模、互不混用；token 一次性/5 分钟/需后端校验（官方文档语义） |
 | MockSolverProvider | ✅ 已实现 | 测试/开发用，行为可注入，离线 |
 | 真实 solver（EzSolver / cfts-solver） | ❌ **未接入** | 服务协议未做源码级核验（路由/参数/结果结构/轮询方式），**不猜测 `/solve` 或 token 字段**；接入前置条件见 `providers.py` 尾注 |
+| PlaywrightCaptchaProvider（playwright-captcha + patchright） | 🟡 **已接入，效力部分验证** | 2026-10-03 实测：页面→Turnstile→token 链路真实可用（官方测试 sitekey 返回 dummy token）；**ClickSolver 真实点击效力未验证**——官方测试密钥不产生真实交互挑战，验证需持有人自己的 sitekey（授权环境）。依赖 `.[captcha]` extra，页面由调用方注入 |
 | 授权环境实测 | ❌ 未做 | 本轮全部为本地模拟 |
 
 ## 迁移语义（对应审计要求）
