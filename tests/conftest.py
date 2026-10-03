@@ -92,9 +92,14 @@ class Router(http.server.BaseHTTPRequestHandler):
         pass
 
 
+class _LocalHTTPServer(http.server.ThreadingHTTPServer):
+    # Windows 上默认 listen backlog=5，12+ 并发连接会被直接拒绝（实测 CI）
+    request_queue_size = 128
+
+
 @pytest.fixture()
 def local_base():
-    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Router)
+    srv = _LocalHTTPServer(("127.0.0.1", 0), Router)
     Router.post_count = 0
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     yield f"http://127.0.0.1:{srv.server_address[1]}"
@@ -185,6 +190,7 @@ class _MiniProxyHandler(socketserver.BaseRequestHandler):
 class _ThreadingProxy(socketserver.ThreadingTCPServer):
     allow_reuse_address = True
     daemon_threads = True
+    request_queue_size = 128
 
 
 @pytest.fixture()

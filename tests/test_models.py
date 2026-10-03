@@ -38,12 +38,9 @@ def test_request_data_json_mutex():
 
 
 def test_request_unreplayable_body_rejected():
-    fh = open("/dev/null", "rb")  # noqa: SIM115 测试内短生命周期句柄
-    try:
-        with pytest.raises(ConfigError):
-            Request("POST", "http://x/", data=fh)  # 文件体本版不支持（可重放契约）
-    finally:
-        fh.close()
+    import io
+    with pytest.raises(ConfigError):
+        Request("POST", "http://x/", data=io.BytesIO(b"x"))  # 文件型请求体（跨平台）
 
 
 def test_request_replayability_rules():
