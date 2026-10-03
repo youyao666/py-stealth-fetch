@@ -12,12 +12,34 @@ from stealth_fetch import (
     RetryPolicy,
     TransportError,
 )
-from stealth_fetch.engines.chrome_fp_engine import ChromeFpEngine
-from stealth_fetch.engines.curl_cffi_engine import CurlCffiEngine
-from stealth_fetch.engines.httpcloak_engine import HttpCloakEngine
-from stealth_fetch.engines.wreq_engine import WreqEngine
 
-ENGINE_CLASSES = [CurlCffiEngine, ChromeFpEngine, WreqEngine, HttpCloakEngine]
+ENGINE_CLASSES = []
+try:
+    from stealth_fetch.engines.chrome_fp_engine import ChromeFpEngine
+
+    ENGINE_CLASSES.append(ChromeFpEngine)
+except ImportError:
+    pass
+try:
+    from stealth_fetch.engines.curl_cffi_engine import CurlCffiEngine
+
+    ENGINE_CLASSES.append(CurlCffiEngine)
+except ImportError:
+    pass
+try:
+    from stealth_fetch.engines.httpcloak_engine import HttpCloakEngine
+
+    ENGINE_CLASSES.append(HttpCloakEngine)
+except ImportError:
+    pass
+try:
+    from stealth_fetch.engines.wreq_engine import WreqEngine
+
+    ENGINE_CLASSES.append(WreqEngine)
+except ImportError:
+    pass
+
+assert ENGINE_CLASSES, "至少应有一个可用引擎（CI 各平台 curl_cffi 应可安装）"
 
 # 每引擎能力期望（来自实测证据，docs/engines.md）
 EXPECT = {
